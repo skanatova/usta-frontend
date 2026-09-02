@@ -20,6 +20,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
 }
 
 export function ProductDetailModal({
@@ -27,7 +28,8 @@ export function ProductDetailModal({
   isOpen,
   onClose,
   onEdit,
-  onDelete
+  onDelete,
+  onAddToCart
 }: ProductDetailModalProps) {
   const [copied, setCopied] = useState(false);
 
@@ -41,6 +43,7 @@ export function ProductDetailModal({
 
   const marginAmount = product.marginAmount ?? (product.price - product.costPrice);
   const marginPercent = product.marginPercent ?? (product.costPrice > 0 ? ((marginAmount / product.costPrice) * 100) : 0);
+  const suggested35 = product.suggestedPrice ?? (product.costPrice > 0 ? Number((product.costPrice * 1.35).toFixed(0)) : product.price);
   const totalStockCost = (product.costPrice || 0) * (product.quantity || 0);
   const totalStockRetail = (product.price || 0) * (product.quantity || 0);
   const totalStockProfit = totalStockRetail - totalStockCost;
@@ -95,16 +98,24 @@ export function ProductDetailModal({
             </button>
           </div>
 
-          {/* Pricing & Margins Grid */}
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
-              <span className="text-[10px] sm:text-[11px] text-slate-400 block mb-0.5">Закупка</span>
-              <span className="text-sm sm:text-lg font-bold text-slate-200">{product.costPrice.toLocaleString()} сом</span>
+          {/* 3 Pricing Info Cards (Закуп, +35% Реком, Розница) */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2.5 rounded-xl bg-slate-800/40 border border-slate-800 text-center">
+              <span className="text-[10px] text-slate-400 block mb-0.5 uppercase">Закуп</span>
+              <span className="text-xs sm:text-base font-bold text-slate-200 font-mono">{product.costPrice.toLocaleString()} с</span>
             </div>
-            <div className="p-3 rounded-xl bg-slate-800/40 border border-slate-800">
-              <span className="text-[10px] sm:text-[11px] text-slate-400 block mb-0.5">Продажа</span>
-              <span className="text-sm sm:text-lg font-bold text-amber-400">{product.price.toLocaleString()} сом</span>
+            <div className="p-2.5 rounded-xl bg-teal-950/20 border border-teal-800/40 text-center">
+              <span className="text-[10px] text-teal-400 block mb-0.5 uppercase font-semibold">+35% Реком</span>
+              <span className="text-xs sm:text-base font-bold text-teal-300 font-mono">{suggested35.toLocaleString()} с</span>
             </div>
+            <div className="p-2.5 rounded-xl bg-amber-950/20 border border-amber-800/40 text-center">
+              <span className="text-[10px] text-amber-400 block mb-0.5 uppercase font-semibold">Розница</span>
+              <span className="text-xs sm:text-base font-black text-amber-400 font-mono">{product.price.toLocaleString()} с</span>
+            </div>
+          </div>
+
+          {/* Profit & Margins */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40">
               <span className="text-[10px] sm:text-[11px] text-emerald-400 block mb-0.5">Прибыль / ед.</span>
               <span className="text-sm sm:text-lg font-bold text-emerald-400">+{marginAmount.toLocaleString()} сом</span>
@@ -160,7 +171,7 @@ export function ProductDetailModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between p-3.5 sm:p-4 border-t border-slate-800 bg-slate-900/95 shrink-0">
+        <div className="flex items-center justify-between p-3.5 sm:p-4 border-t border-slate-800 bg-slate-900/95 shrink-0 gap-2">
           <button
             onClick={() => {
               onClose();
@@ -173,18 +184,24 @@ export function ProductDetailModal({
           </button>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
-            >
-              Закрыть
-            </button>
+            {onAddToCart && product.quantity > 0 && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onAddToCart(product);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-black shadow-md shadow-amber-500/20 transition-all active:scale-95"
+              >
+                <DollarSign className="w-4 h-4" />
+                Продать товар
+              </button>
+            )}
             <button
               onClick={() => {
                 onClose();
                 onEdit(product);
               }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors"
             >
               <Edit3 className="w-4 h-4" />
               Изменить

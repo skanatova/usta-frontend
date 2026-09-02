@@ -8,7 +8,7 @@ import {
   Server, 
   RefreshCw, 
   Hammer, 
-  Sparkles
+  ShoppingCart
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -18,7 +18,9 @@ interface NavbarProps {
   onOpenCreateModal: () => void;
   onOpenCategoryModal: () => void;
   onOpenScannerModal: () => void;
+  onOpenPOSModal: () => void;
   productCount: number;
+  cartCount?: number;
 }
 
 export function Navbar({
@@ -28,7 +30,9 @@ export function Navbar({
   onOpenCreateModal,
   onOpenCategoryModal,
   onOpenScannerModal,
-  productCount
+  onOpenPOSModal,
+  productCount,
+  cartCount = 0
 }: NavbarProps) {
   return (
     <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 text-white">
@@ -46,7 +50,7 @@ export function Navbar({
                   USTA POS
                 </span>
                 <span className="hidden xs:inline-block text-[10px] sm:text-xs bg-slate-800 text-amber-400 border border-amber-500/30 font-medium px-1.5 sm:px-2 py-0.5 rounded-full whitespace-nowrap">
-                  Склад
+                  Склад &amp; Продажи
                 </span>
                 {/* Mobile status dot */}
                 <button
@@ -58,7 +62,7 @@ export function Navbar({
                 </button>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden xs:block">
-                Управление товарами и остатками
+                Касса, скидки, управление товарами и остатками
               </p>
             </div>
           </div>
@@ -88,14 +92,30 @@ export function Navbar({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
+            
+            {/* POS Sell Button */}
+            <button
+              onClick={onOpenPOSModal}
+              className="relative inline-flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs sm:text-sm shadow-md shadow-emerald-500/20 active:scale-95 transition-all"
+              title="Открыть кассу для продажи товаров"
+            >
+              <ShoppingCart className="w-4 h-4 text-slate-950" />
+              <span>Касса</span>
+              {cartCount > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-slate-950 text-emerald-400 text-[10px] font-black animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={onOpenScannerModal}
               className="inline-flex items-center justify-center p-2 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-medium transition-all shadow-sm active:scale-95"
               title="Сканер штрихкодов"
             >
               <ScanLine className="w-4 h-4 text-amber-400" />
-              <span className="hidden md:inline ml-1.5">Сканер</span>
+              <span className="hidden lg:inline ml-1.5">Сканер</span>
             </button>
 
             <button
@@ -104,16 +124,16 @@ export function Navbar({
               title="Категории товаров"
             >
               <Layers className="w-4 h-4 text-orange-400" />
-              <span className="hidden md:inline ml-1.5">Категории</span>
+              <span className="hidden lg:inline ml-1.5">Категории</span>
             </button>
 
             <button
               onClick={onOpenCreateModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-md shadow-amber-500/20 active:scale-95 shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs sm:text-sm transition-all shadow-md shadow-amber-500/20 active:scale-95 shrink-0"
+              title="Добавить новый товар"
             >
               <PlusCircle className="w-4 h-4" />
-              <span className="hidden xs:inline">Добавить</span>
-              <span className="hidden sm:inline">товар</span>
+              <span className="hidden sm:inline">Товар</span>
             </button>
           </div>
 

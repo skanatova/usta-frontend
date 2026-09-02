@@ -315,7 +315,7 @@ export function ProductModal({
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               <div>
                 <label className="block text-[10px] sm:text-xs text-slate-400 mb-1 truncate">
-                  Закуп (Себестоимость)
+                  1. Закуп (Себестоимость)
                 </label>
                 <div className="relative">
                   <input
@@ -332,9 +332,21 @@ export function ProductModal({
               </div>
 
               <div>
-                <label className="block text-[10px] sm:text-xs text-slate-400 mb-1 truncate">
-                  Продажа (Розница) *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[10px] sm:text-xs text-slate-400 truncate">
+                    3. Продажа (Розница) *
+                  </label>
+                  {numericCost > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPrice(Number((numericCost * 1.35).toFixed(0)))}
+                      className="text-[10px] text-teal-400 hover:text-teal-300 font-semibold underline"
+                      title="Установить рекомендованную цену (+35%)"
+                    >
+                      +35%
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <input
                     type="number"
@@ -350,6 +362,26 @@ export function ProductModal({
                 </div>
               </div>
             </div>
+
+            {/* 2. Suggested 35% Price Banner */}
+            {numericCost > 0 && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-teal-950/30 border border-teal-800/40 text-xs">
+                <div className="flex items-center gap-1.5 text-teal-300">
+                  <Sparkles className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                  <span>2. Реком. цена (+35% к закупу):</span>
+                  <strong className="font-mono font-bold text-white">
+                    {(numericCost * 1.35).toFixed(0)} сом
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPrice(Number((numericCost * 1.35).toFixed(0)))}
+                  className="px-2 py-0.5 rounded bg-teal-500 hover:bg-teal-400 text-slate-950 text-[11px] font-bold transition-colors"
+                >
+                  Применить
+                </button>
+              </div>
+            )}
 
             {/* Margin Calculation Preview */}
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] sm:text-xs">

@@ -1,4 +1,4 @@
-import { Product, ProductInput, Category } from '@/types';
+import { Product, ProductInput, Category, SaleCheckoutRequest, SaleRecord } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://usta-backend-hpqg.onrender.com/api/v1';
 
@@ -21,6 +21,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: 'Перфоратор Makita HR2470 SDS-Plus',
     price: 9500,
     costPrice: 7200,
+    suggestedPrice: 9720,
     quantity: 14,
     unit: 'шт',
     attributes: { 'Бренд': 'Makita', 'Мощность': '780 Вт', 'Патрон': 'SDS-Plus', 'Страна': 'Япония' },
@@ -35,6 +36,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: 'Дрель-шуруповерт DeWalt DCD771C2',
     price: 8200,
     costPrice: 5900,
+    suggestedPrice: 7965,
     quantity: 8,
     unit: 'шт',
     attributes: { 'Бренд': 'DeWalt', 'Напряжение': '18 В', 'АКБ': '2x1.3 Ач', 'Крутящий момент': '42 Нм' },
@@ -49,6 +51,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: 'Саморезы по дереву 3.5х45 мм (черные, 1000 шт)',
     price: 450,
     costPrice: 280,
+    suggestedPrice: 378,
     quantity: 120,
     unit: 'упак',
     attributes: { 'Размер': '3.5x45 мм', 'Тип': 'Потайная головка', 'Покрытие': 'Фосфатированное' },
@@ -63,6 +66,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: 'Краска интерьерная Tikkurila Euro Power 7 (9 л)',
     price: 4800,
     costPrice: 3600,
+    suggestedPrice: 4860,
     quantity: 25,
     unit: 'шт',
     attributes: { 'Бренд': 'Tikkurila', 'Объем': '9 л', 'Степень блеска': 'Матовая', 'Цвет': 'Белый' },
@@ -77,6 +81,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: 'Кабель силовой ВВГ-Пнг(А) 3х2.5 ГОСТ',
     price: 85,
     costPrice: 58,
+    suggestedPrice: 78.3,
     quantity: 350.5,
     unit: 'м',
     attributes: { 'Сечение': '3х2.5 мм²', 'Материал': 'Медь', 'Стандарт': 'ГОСТ 31996-2012' },
@@ -91,6 +96,7 @@ const INITIAL_PRODUCTS: Product[] = [
     name: 'Набор отверток профессиональный Kraftool Expert (6 шт)',
     price: 1350,
     costPrice: 850,
+    suggestedPrice: 1147.5,
     quantity: 3,
     unit: 'компл',
     attributes: { 'Бренд': 'Kraftool', 'Кол-во': '6 шт', 'Материал': 'Cr-V сталь' },
@@ -140,6 +146,23 @@ function saveLocalCategories(categories: Category[]) {
   }
 }
 
+function getLocalSales(): SaleRecord[] {
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem('usta_sales');
+  if (!stored) return [];
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalSales(sales: SaleRecord[]) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('usta_sales', JSON.stringify(sales));
+  }
+}
+
 export async function checkBackendHealth(): Promise<{ online: boolean; url: string }> {
   try {
     const controller = new AbortController();
@@ -156,10 +179,11 @@ export async function checkBackendHealth(): Promise<{ online: boolean; url: stri
   }
 }
 
-// Compute margin amounts
-function enrichProduct(p: ProductInput & { id: number; barcode: string; categoryName?: string }): Product {
+// Compute margin amounts and 35% suggested price
+function enrichProduct(p: ProductInput & { id: number; barcode: string; categoryName?: string; suggestedPrice?: number }): Product {
   const marginAmount = Number((p.price - p.costPrice).toFixed(2));
   const marginPercent = p.costPrice > 0 ? Number(((marginAmount / p.costPrice) * 100).toFixed(2)) : 0;
+  const suggestedPrice = p.suggestedPrice ?? (p.costPrice > 0 ? Number((p.costPrice * 1.35).toFixed(2)) : p.price);
   return {
     id: p.id,
     name: p.name,
@@ -168,6 +192,7 @@ function enrichProduct(p: ProductInput & { id: number; barcode: string; category
     categoryName: p.categoryName,
     price: p.price,
     costPrice: p.costPrice,
+    suggestedPrice,
     quantity: p.quantity,
     unit: p.unit,
     attributes: p.attributes,
@@ -368,6 +393,98 @@ export const api = {
       const filtered = categories.filter(c => c.id !== id);
       saveLocalCategories(filtered);
       return { success: true, isBackend: false };
+    }
+  },
+
+  async checkout(request: SaleCheckoutRequest): Promise<{ saleId: number; message: string; isBackend: boolean }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/pos/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(request)
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || `Ошибка сервера: HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      return { saleId: data.saleId, message: data.message || `Продажа #${data.saleId} успешно проведена`, isBackend: true };
+    } catch (err: any) {
+      if (err.message && !err.message.includes('fetch') && !err.message.includes('NetworkError') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
+      // Offline fallback checkout
+      const list = getLocalProducts();
+      let grandTotal = 0;
+      const saleItems: SaleRecord['items'] = [];
+
+      for (const item of request.items) {
+        const product = list.find(p => p.id === item.productId);
+        if (!product) {
+          throw new Error(`Товар с ID ${item.productId} не найден в базе данных!`);
+        }
+        if (product.quantity < item.quantity) {
+          throw new Error(`Недостаточно товара "${product.name}" на складе! В наличии: ${product.quantity} ${product.unit}, Запрошено: ${item.quantity}`);
+        }
+
+        // Deduct quantity
+        product.quantity = Math.max(0, Number((product.quantity - item.quantity).toFixed(2)));
+
+        // Price calculation with discount in money
+        let effectivePrice = product.price;
+        if (item.customPrice !== undefined && item.customPrice >= 0) {
+          effectivePrice = item.customPrice;
+        } else if (item.discount !== undefined && item.discount > 0) {
+          effectivePrice = Math.max(0, product.price - item.discount);
+        }
+
+        const itemTotal = Number((effectivePrice * item.quantity).toFixed(2));
+        grandTotal += itemTotal;
+
+        saleItems.push({
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          productId: product.id,
+          productName: product.name,
+          unit: product.unit,
+          quantity: item.quantity,
+          price: effectivePrice,
+          total: itemTotal
+        });
+      }
+
+      saveLocalProducts(list);
+
+      const saleId = Math.floor(100000 + Math.random() * 900000);
+      const newSale: SaleRecord = {
+        id: saleId,
+        totalAmount: Number(grandTotal.toFixed(2)),
+        paymentType: request.paymentType,
+        createdAt: new Date().toISOString(),
+        items: saleItems
+      };
+
+      const sales = getLocalSales();
+      sales.unshift(newSale);
+      saveLocalSales(sales);
+
+      return {
+        saleId,
+        message: `Продажа #${saleId} успешно проведена (Офлайн-режим)`,
+        isBackend: false
+      };
+    }
+  },
+
+  async getSales(): Promise<{ sales: SaleRecord[]; isBackend: boolean }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/pos/sales`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return { sales: data, isBackend: true };
+    } catch {
+      return { sales: getLocalSales(), isBackend: false };
     }
   }
 };

@@ -16,7 +16,8 @@ import {
   Package, 
   X,
   ChevronRight,
-  FolderTree
+  FolderTree,
+  ShoppingCart
 } from 'lucide-react';
 
 interface ProductTableProps {
@@ -28,9 +29,10 @@ interface ProductTableProps {
   onDeleteProduct: (product: Product) => void;
   onQuickUpdateStock: (product: Product, newQty: number) => Promise<void>;
   onOpenCreateModal: () => void;
+  onAddToCart?: (product: Product) => void;
 }
 
-type SortField = 'name' | 'price' | 'costPrice' | 'quantity' | 'marginPercent' | 'id';
+type SortField = 'name' | 'price' | 'costPrice' | 'suggestedPrice' | 'quantity' | 'marginPercent' | 'id';
 type SortOrder = 'asc' | 'desc';
 type StockFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
 
@@ -42,7 +44,8 @@ export function ProductTable({
   onEditProduct,
   onDeleteProduct,
   onQuickUpdateStock,
-  onOpenCreateModal
+  onOpenCreateModal,
+  onAddToCart
 }: ProductTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<number | 'all'>('all');
@@ -153,6 +156,11 @@ export function ProductTable({
     }).sort((a, b) => {
       let valA: any = a[sortField];
       let valB: any = b[sortField];
+
+      if (sortField === 'suggestedPrice') {
+        valA = a.suggestedPrice ?? (a.costPrice ? a.costPrice * 1.35 : a.price);
+        valB = b.suggestedPrice ?? (b.costPrice ? b.costPrice * 1.35 : b.price);
+      }
 
       if (sortField === 'marginPercent') {
         valA = a.marginPercent ?? ((a.price - a.costPrice) / (a.costPrice || 1));
@@ -367,6 +375,7 @@ export function ProductTable({
           filteredProducts.map((product) => {
             const marginAmount = product.marginAmount ?? (product.price - product.costPrice);
             const marginPercent = product.marginPercent ?? (product.costPrice > 0 ? ((marginAmount / product.costPrice) * 100) : 0);
+            const suggested35 = product.suggestedPrice ?? (product.costPrice > 0 ? Number((product.costPrice * 1.35).toFixed(0)) : product.price);
             const isLowStock = (product.quantity || 0) <= 5 && (product.quantity || 0) > 0;
             const isOutOfStock = (product.quantity || 0) <= 0;
 
@@ -430,19 +439,23 @@ export function ProductTable({
                   </div>
                 )}
 
-                {/* Pricing & Profit Grid */}
-                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 text-xs">
+                {/* 3 Pricing Info + Profit Grid (Закуп, Реком +35%, Розница, Прибыль) */}
+                <div className="grid grid-cols-4 gap-1.5 p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 text-xs text-center">
                   <div>
-                    <span className="text-[10px] text-slate-500 block">Закуп</span>
-                    <span className="font-semibold text-slate-300">{product.costPrice.toLocaleString()} с</span>
+                    <span className="text-[9px] text-slate-500 block uppercase">Закуп</span>
+                    <span className="font-semibold text-slate-300 text-[11px] font-mono">{product.costPrice.toLocaleString()} с</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block">Продажа</span>
-                    <span className="font-black text-amber-400">{product.price.toLocaleString()} с</span>
+                    <span className="text-[9px] text-teal-400 block uppercase font-bold">+35%</span>
+                    <span className="font-bold text-teal-300 text-[11px] font-mono">{suggested35.toLocaleString()} с</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-slate-500 block">Прибыль</span>
-                    <span className="font-bold text-emerald-400">+{marginAmount.toLocaleString()} с</span>
+                  <div>
+                    <span className="text-[9px] text-amber-400 block uppercase font-bold">Розница</span>
+                    <span className="font-black text-amber-400 text-xs font-mono">{product.price.toLocaleString()} с</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-emerald-400 block uppercase">Прибыль</span>
+                    <span className="font-bold text-emerald-400 text-[11px] font-mono">+{marginAmount.toLocaleString()} с</span>
                   </div>
                 </div>
 
@@ -473,8 +486,19 @@ export function ProductTable({
                     </button>
                   </div>
 
-                  {/* Action buttons */}
+                  {/* Action buttons with quick sell */}
                   <div className="flex items-center gap-1">
+                    {onAddToCart && (
+                      <button
+                        onClick={() => onAddToCart(product)}
+                        disabled={isOutOfStock}
+                        className="inline-flex items-center gap-1 px-2.5 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 rounded-lg text-xs font-black shadow-sm disabled:opacity-30 active:scale-95 transition-all"
+                        title="Добавить в чек / продать"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        <span>Продать</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => onViewProduct(product)}
                       className="p-2 text-slate-300 hover:text-amber-400 bg-slate-800 rounded-lg border border-slate-700 active:scale-95 transition-all"
@@ -533,11 +557,20 @@ export function ProductTable({
                   </div>
                 </th>
                 <th
+                  onClick={() => handleSort('suggestedPrice')}
+                  className="py-3.5 px-3 cursor-pointer hover:text-teal-300 transition-colors text-right"
+                >
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span className="text-teal-400 font-bold">Реком. (+35%)</span>
+                    <ArrowUpDown className="w-3.5 h-3.5 text-teal-500" />
+                  </div>
+                </th>
+                <th
                   onClick={() => handleSort('price')}
                   className="py-3.5 px-3 cursor-pointer hover:text-white transition-colors text-right"
                 >
                   <div className="flex items-center justify-end gap-1.5">
-                    <span>Продажа</span>
+                    <span>Розница</span>
                     <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
                   </div>
                 </th>
@@ -566,14 +599,14 @@ export function ProductTable({
             <tbody className="divide-y divide-slate-800/60">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                  <td colSpan={9} className="py-12 text-center text-slate-400">
                     <div className="inline-block w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2" />
                     <p className="text-xs">Загрузка каталога товаров...</p>
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center">
+                  <td colSpan={9} className="py-12 text-center">
                     <Package className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                     <h4 className="text-sm font-bold text-slate-300">Товары не найдены</h4>
                     <p className="text-xs text-slate-500 mt-1 mb-4">
@@ -594,6 +627,7 @@ export function ProductTable({
                 filteredProducts.map((product) => {
                   const marginAmount = product.marginAmount ?? (product.price - product.costPrice);
                   const marginPercent = product.marginPercent ?? (product.costPrice > 0 ? ((marginAmount / product.costPrice) * 100) : 0);
+                  const suggested35 = product.suggestedPrice ?? (product.costPrice > 0 ? Number((product.costPrice * 1.35).toFixed(0)) : product.price);
                   const isLowStock = (product.quantity || 0) <= 5 && (product.quantity || 0) > 0;
                   const isOutOfStock = (product.quantity || 0) <= 0;
 
@@ -656,16 +690,28 @@ export function ProductTable({
                         )}
                       </td>
 
-                      {/* Cost Price */}
+                      {/* 1. Cost Price */}
                       <td className="py-3.5 px-3 text-right whitespace-nowrap">
                         <span className="text-xs text-slate-400 font-mono">
                           {product.costPrice.toLocaleString()} сом
                         </span>
                       </td>
 
-                      {/* Retail Price */}
+                      {/* 2. Suggested Price (+35% markup) */}
                       <td className="py-3.5 px-3 text-right whitespace-nowrap">
-                        <span className="text-sm font-bold text-white font-mono">
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs font-bold text-teal-300 font-mono">
+                            {suggested35.toLocaleString()} сом
+                          </span>
+                          <span className="text-[9px] text-teal-400/80 font-medium">
+                            +35% наценка
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* 3. Retail Price (Actual Price) */}
+                      <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                        <span className="text-sm font-black text-amber-400 font-mono">
                           {product.price.toLocaleString()} сом
                         </span>
                       </td>
@@ -722,7 +768,18 @@ export function ProductTable({
 
                       {/* Action buttons */}
                       <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {onAddToCart && (
+                            <button
+                              onClick={() => onAddToCart(product)}
+                              disabled={isOutOfStock}
+                              className="px-2.5 py-1.5 text-slate-950 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 rounded-lg font-bold disabled:opacity-30 transition-all shadow-sm flex items-center gap-1 text-xs"
+                              title="Оформить продажу / добавить в чек"
+                            >
+                              <ShoppingCart className="w-3.5 h-3.5" />
+                              <span className="hidden lg:inline">Продать</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => onViewProduct(product)}
                             className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"

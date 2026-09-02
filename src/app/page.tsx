@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Product, ProductInput, Category, ToastMessage } from '@/types';
+import { Product, ProductInput, Category, CartItem, ToastMessage } from '@/types';
 import { api, checkBackendHealth } from '@/lib/api';
 import { Navbar } from '@/components/Navbar';
 import { ProductStats } from '@/components/ProductStats';
@@ -11,13 +11,15 @@ import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { CategoryModal } from '@/components/CategoryModal';
 import { BarcodeScannerModal } from '@/components/BarcodeScannerModal';
+import { POSModal } from '@/components/POSModal';
 import { ToastContainer } from '@/components/Toast';
 import { 
   Package, 
   Layers, 
   Plus, 
   ScanLine, 
-  RefreshCw 
+  RefreshCw,
+  ShoppingCart
 } from 'lucide-react';
 
 export default function Home() {
@@ -27,6 +29,10 @@ export default function Home() {
   const [isBackend, setIsBackend] = useState<boolean>(false);
   const [backendUrl, setBackendUrl] = useState<string>('https://usta-backend-hpqg.onrender.com/api/v1');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // POS / Cart State
+  const [isPOSModalOpen, setIsPOSModalOpen] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>([]);
 
   // Modals state
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -159,6 +165,52 @@ export default function Home() {
     }
   };
 
+  // POS & Cart Handlers
+  const handleAddToCart = (product: Product) => {
+    if (product.quantity <= 0) {
+      addToast('error', `Товар "${product.name}" отсутствует на складе!`);
+      return;
+    }
+
+    setCart((prev) => {
+      const idx = prev.findIndex((item) => item.product.id === product.id);
+      if (idx >= 0) {
+        const item = prev[idx];
+        const newQty = item.quantity + 1;
+        const discount = item.discount || 0;
+        const effectivePrice = Math.max(0, product.price - discount);
+        const updated = [...prev];
+        updated[idx] = {
+          ...item,
+          quantity: newQty,
+          effectivePrice,
+          total: Number((effectivePrice * newQty).toFixed(2))
+        };
+        return updated;
+      } else {
+        const effectivePrice = product.price;
+        return [
+          {
+            product,
+            quantity: 1,
+            discount: 0,
+            effectivePrice,
+            total: effectivePrice
+          },
+          ...prev
+        ];
+      }
+    });
+
+    setIsPOSModalOpen(true);
+    addToast('info', `Товар "${product.name}" добавлен в чек`);
+  };
+
+  const handleCheckoutSuccess = (saleId: number, message: string) => {
+    addToast('success', message);
+    loadData(); // Re-fetch to update inventory stock from DB
+  };
+
   // Modal open handlers
   const handleOpenCreateModal = () => {
     setEditingProduct(null);
@@ -194,7 +246,9 @@ export default function Home() {
         onOpenCreateModal={handleOpenCreateModal}
         onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
         onOpenScannerModal={() => setIsScannerModalOpen(true)}
+        onOpenPOSModal={() => setIsPOSModalOpen(true)}
         productCount={products.length}
+        cartCount={cart.reduce((a, b) => a + b.quantity, 0)}
       />
 
       {/* Main Content Area */}
@@ -213,6 +267,7 @@ export default function Home() {
           onDeleteProduct={handleTriggerDelete}
           onQuickUpdateStock={handleQuickUpdateStock}
           onOpenCreateModal={handleOpenCreateModal}
+          onAddToCart={handleAddToCart}
         />
 
       </main>
@@ -230,13 +285,20 @@ export default function Home() {
             <span>Склад</span>
           </button>
 
-          {/* Scanner */}
+          {/* POS Sell / Касса */}
           <button
-            onClick={() => setIsScannerModalOpen(true)}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 text-[10px] font-medium transition-colors"
+            onClick={() => setIsPOSModalOpen(true)}
+            className="relative flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400 text-[10px] font-medium transition-colors"
           >
-            <ScanLine className="w-5 h-5" />
-            <span>Сканер</span>
+            <div className="relative">
+              <ShoppingCart className="w-5 h-5 text-emerald-400" />
+              {cart.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-slate-950 text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {cart.reduce((a, b) => a + b.quantity, 0)}
+                </span>
+              )}
+            </div>
+            <span>Касса</span>
           </button>
 
           {/* Main Action FAB (Add Product) */}
@@ -257,13 +319,13 @@ export default function Home() {
             <span>Категории</span>
           </button>
 
-          {/* Sync / Refresh */}
+          {/* Scanner */}
           <button
-            onClick={loadData}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400 text-[10px] font-medium transition-colors"
+            onClick={() => setIsScannerModalOpen(true)}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 text-[10px] font-medium transition-colors"
           >
-            <RefreshCw className="w-5 h-5" />
-            <span>Обновить</span>
+            <ScanLine className="w-5 h-5" />
+            <span>Сканер</span>
           </button>
 
         </div>
@@ -298,6 +360,7 @@ export default function Home() {
           setIsDetailModalOpen(false);
           handleTriggerDelete(prod);
         }}
+        onAddToCart={handleAddToCart}
       />
 
       {/* Delete Confirmation Modal */}
@@ -328,6 +391,17 @@ export default function Home() {
         products={products}
         onQuickUpdateStock={handleQuickUpdateStock}
         onViewProduct={handleViewProduct}
+      />
+
+      {/* POS Sell & Checkout Modal */}
+      <POSModal
+        isOpen={isPOSModalOpen}
+        onClose={() => setIsPOSModalOpen(false)}
+        products={products}
+        categories={categories}
+        cart={cart}
+        setCart={setCart}
+        onCheckoutSuccess={handleCheckoutSuccess}
       />
 
     </div>
