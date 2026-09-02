@@ -287,11 +287,21 @@ export function ProductModal({
               className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-amber-500 transition-colors"
             >
               <option value="">-- Без категории --</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {categories.filter(c => !c.parentId).map((root) => {
+                const subCats = categories.filter((c) => c.parentId === root.id);
+                return (
+                  <React.Fragment key={root.id}>
+                    <option value={root.id} className="font-bold text-amber-400">
+                      📁 {root.name}
+                    </option>
+                    {subCats.map((sub) => (
+                      <option key={sub.id} value={sub.id} className="text-slate-300">
+                        &nbsp;&nbsp;&nbsp;&nbsp;↳ {sub.name}
+                      </option>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </select>
           </div>
 

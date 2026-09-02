@@ -201,7 +201,19 @@ export const api = {
         );
       }
       if (categoryId) {
-        list = list.filter(p => p.categoryId === categoryId);
+        const categories = getLocalCategories();
+        const validIds = new Set<number>([categoryId]);
+        const queue = [categoryId];
+        while (queue.length > 0) {
+          const current = queue.shift()!;
+          for (const c of categories) {
+            if (c.parentId === current && !validIds.has(c.id)) {
+              validIds.add(c.id);
+              queue.push(c.id);
+            }
+          }
+        }
+        list = list.filter(p => p.categoryId && validIds.has(p.categoryId));
       }
       return { products: list, isBackend: false };
     }

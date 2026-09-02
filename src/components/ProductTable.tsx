@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { Product, Category } from '@/types';
 import { 
   Search, 
-  Filter, 
   ArrowUpDown, 
   Eye, 
   Edit3, 
@@ -12,16 +11,12 @@ import {
   Plus, 
   Minus, 
   Barcode, 
-  Tag, 
   Copy, 
   Check, 
   Package, 
-  AlertTriangle,
-  CheckCircle2,
-  TrendingUp,
   X,
-  LayoutGrid,
-  List
+  ChevronRight,
+  FolderTree
 } from 'lucide-react';
 
 interface ProductTableProps {
@@ -55,7 +50,6 @@ export function ProductTable({
   const [sortField, setSortField] = useState<SortField>('id');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [copiedBarcode, setCopiedBarcode] = useState<string | null>(null);
-  const [mobileView, setMobileView] = useState<'cards' | 'table'>('cards');
 
   const handleCopyBarcode = (barcode: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -73,9 +67,58 @@ export function ProductTable({
     }
   };
 
+  // Helper to recursively get all descendant category IDs for super-parent filtering
+  const getSubcategoryIds = useMemo(() => {
+    return (rootCatId: number): Set<number> => {
+      const ids = new Set<number>([rootCatId]);
+      const queue = [rootCatId];
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        const children = categories.filter((c) => c.parentId === current);
+        for (const child of children) {
+          if (!ids.has(child.id)) {
+            ids.add(child.id);
+            queue.push(child.id);
+          }
+        }
+      }
+      return ids;
+    };
+  }, [categories]);
+
+  // Count products in a category and all its subcategories
+  const getCategoryProductCount = (catId: number) => {
+    const validIds = getSubcategoryIds(catId);
+    return products.filter((p) => p.categoryId && validIds.has(p.categoryId)).length;
+  };
+
+  // Root categories (categories with no parent)
+  const rootCategories = useMemo(() => {
+    return categories.filter((c) => !c.parentId);
+  }, [categories]);
+
+  // Find currently active category object (if selected)
+  const activeCategory = useMemo(() => {
+    if (selectedCategory === 'all') return null;
+    return categories.find((c) => c.id === selectedCategory) || null;
+  }, [selectedCategory, categories]);
+
+  // Find root parent of active category
+  const activeRootCategory = useMemo(() => {
+    if (!activeCategory) return null;
+    if (!activeCategory.parentId) return activeCategory;
+    return categories.find((c) => c.id === activeCategory.parentId) || activeCategory;
+  }, [activeCategory, categories]);
+
+  // Subcategories of the active root category
+  const activeSubcategories = useMemo(() => {
+    if (!activeRootCategory) return [];
+    return categories.filter((c) => c.parentId === activeRootCategory.id);
+  }, [activeRootCategory, categories]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      // 1. Search filter
+      // 1. Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.trim().toLowerCase();
         const matchesName = p.name.toLowerCase().includes(q);
@@ -89,9 +132,12 @@ export function ProductTable({
         }
       }
 
-      // 2. Category filter
+      // 2. Hierarchical Category filter (Super Parent includes ALL subcategories)
       if (selectedCategory !== 'all') {
-        if (p.categoryId !== selectedCategory) return false;
+        const validCategoryIds = getSubcategoryIds(selectedCategory);
+        if (!p.categoryId || !validCategoryIds.has(p.categoryId)) {
+          return false;
+        }
       }
 
       // 3. Stock filter
@@ -120,7 +166,7 @@ export function ProductTable({
       }
       return sortOrder === 'asc' ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0);
     });
-  }, [products, searchQuery, selectedCategory, stockFilter, sortField, sortOrder]);
+  }, [products, searchQuery, selectedCategory, stockFilter, sortField, sortOrder, getSubcategoryIds]);
 
   return (
     <div className="space-y-4">
@@ -151,6 +197,8 @@ export function ProductTable({
 
           {/* Filters & Sorting on Mobile/Desktop */}
           <div className="grid grid-cols-2 sm:flex items-center gap-2">
+            
+            {/* Hierarchical Category Dropdown */}
             <select
               value={selectedCategory}
               onChange={(e) =>
@@ -158,12 +206,26 @@ export function ProductTable({
               }
               className="w-full sm:w-auto px-3 py-2 sm:py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white text-xs font-medium focus:outline-none focus:border-amber-500 truncate"
             >
-              <option value="all">Все категории ({categories.length})</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              <option value="all">Все категории ({products.length})</option>
+              {rootCategories.map((root) => {
+                const subCats = categories.filter((c) => c.parentId === root.id);
+                const rootCount = getCategoryProductCount(root.id);
+                return (
+                  <React.Fragment key={root.id}>
+                    <option value={root.id} className="font-bold text-amber-400">
+                      📁 {root.name} ({rootCount})
+                    </option>
+                    {subCats.map((sub) => {
+                      const subCount = getCategoryProductCount(sub.id);
+                      return (
+                        <option key={sub.id} value={sub.id} className="text-slate-300">
+                          &nbsp;&nbsp;&nbsp;&nbsp;↳ {sub.name} ({subCount})
+                        </option>
+                      );
+                    })}
+                  </React.Fragment>
+                );
+              })}
             </select>
 
             {/* Stock Filter */}
@@ -181,37 +243,101 @@ export function ProductTable({
 
         </div>
 
-        {/* Category quick badges (Horizontal Scrollable) */}
+        {/* Root Category Quick Chips (Horizontal Scrollable) */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none no-scrollbar">
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium text-xs shrink-0 ${
               selectedCategory === 'all'
-                ? 'bg-amber-500 text-slate-950 font-bold'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
                 : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
             }`}
           >
             Все ({products.length})
           </button>
-          {categories.map((cat) => {
-            const count = products.filter((p) => p.categoryId === cat.id).length;
-            const isSelected = selectedCategory === cat.id;
+          {rootCategories.map((root) => {
+            const count = getCategoryProductCount(root.id);
+            const isSelected = selectedCategory === root.id || (activeRootCategory && activeRootCategory.id === root.id);
             return (
               <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(isSelected ? 'all' : cat.id)}
+                key={root.id}
+                onClick={() => setSelectedCategory(root.id)}
                 className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium text-xs shrink-0 ${
                   isSelected
-                    ? 'bg-orange-500 text-slate-950 font-bold'
+                    ? 'bg-orange-500 text-slate-950 font-bold shadow-sm'
                     : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
                 }`}
               >
-                {cat.name} ({count})
+                {root.name} ({count})
               </button>
             );
           })}
         </div>
+
+        {/* Subcategories Drill-Down Pill Bar (Appears when a Parent Category is active!) */}
+        {activeRootCategory && activeSubcategories.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 border-t border-slate-800/60 text-xs">
+            <span className="text-[10px] text-slate-500 flex items-center gap-1 font-semibold uppercase tracking-wider shrink-0 pl-1">
+              <FolderTree className="w-3 h-3 text-orange-400" />
+              Подкатегории:
+            </span>
+            <button
+              onClick={() => setSelectedCategory(activeRootCategory.id)}
+              className={`px-2.5 py-0.5 rounded-md text-[11px] transition-colors whitespace-nowrap font-medium shrink-0 ${
+                selectedCategory === activeRootCategory.id
+                  ? 'bg-amber-400 text-slate-950 font-bold'
+                  : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/60'
+              }`}
+            >
+              Все в {activeRootCategory.name} ({getCategoryProductCount(activeRootCategory.id)})
+            </button>
+            {activeSubcategories.map((sub) => {
+              const subCount = getCategoryProductCount(sub.id);
+              const isSubSelected = selectedCategory === sub.id;
+              return (
+                <button
+                  key={sub.id}
+                  onClick={() => setSelectedCategory(sub.id)}
+                  className={`px-2.5 py-0.5 rounded-md text-[11px] transition-colors whitespace-nowrap font-medium shrink-0 ${
+                    isSubSelected
+                      ? 'bg-amber-400 text-slate-950 font-bold'
+                      : 'bg-slate-800/90 text-slate-300 hover:text-white border border-slate-700/60'
+                  }`}
+                >
+                  ↳ {sub.name} ({subCount})
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Active category filter breadcrumb info */}
+      {activeCategory && (
+        <div className="flex items-center justify-between px-3 py-1.5 bg-orange-950/20 border border-orange-800/30 rounded-xl text-xs text-orange-300">
+          <div className="flex items-center gap-1.5 truncate">
+            <span>Категория:</span>
+            {activeCategory.parentId && activeRootCategory && (
+              <>
+                <span className="text-slate-400">{activeRootCategory.name}</span>
+                <ChevronRight className="w-3 h-3 text-slate-500" />
+              </>
+            )}
+            <strong className="text-white font-bold">{activeCategory.name}</strong>
+            {!activeCategory.parentId && (
+              <span className="text-[10px] text-orange-400/80 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20 ml-1">
+                включая все подкатегории
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className="text-[11px] text-orange-400 hover:text-white underline ml-2 shrink-0"
+          >
+            Сбросить
+          </button>
+        </div>
+      )}
 
       {/* MOBILE CARDS VIEW (block md:hidden) */}
       <div className="block md:hidden space-y-3">
@@ -225,7 +351,9 @@ export function ProductTable({
             <Package className="w-10 h-10 text-slate-600 mx-auto mb-3" />
             <h4 className="text-sm font-bold text-slate-300">Товары не найдены</h4>
             <p className="text-xs text-slate-500 mt-1 mb-4">
-              Попробуйте изменить поиск или добавьте новый товар
+              {searchQuery || selectedCategory !== 'all' || stockFilter !== 'all'
+                ? 'В выбранной категории или по данному запросу пока нет товаров'
+                : 'В вашем складе еще нет добавленных позиций'}
             </p>
             <button
               onClick={onOpenCreateModal}
