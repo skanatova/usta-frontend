@@ -61,10 +61,10 @@ export function Navbar({
             {isBackend ? (
               <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Spring Boot (8080)
+                {backendUrl.includes('render') ? 'Render (Supabase)' : 'Spring Boot API'}
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-amber-400 font-medium" title="Spring Boot сервер не запущен, используется локальное хранилище">
+              <span className="flex items-center gap-1.5 text-amber-400 font-medium" title="Бэкенд недоступен, используется локальное хранилище">
                 <span className="w-2 h-2 rounded-full bg-amber-400" />
                 Автономный режим (Demo)
               </span>
