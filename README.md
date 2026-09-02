@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# USTA POS & Склад — Next.js Frontend
 
-## Getting Started
+Веб-приложение для управления складом, товарами и POS-терминалом магазина строительных материалов и инструментов **USTA**, разработанное на Next.js 15 (App Router, React 19, TypeScript, Tailwind CSS v4).
 
-First, run the development server:
+Интегрировано со Spring Boot бэкендом из `/Desktop/usta-main`.
 
+---
+
+## 🚀 Основные возможности
+
+### 📦 Полный цикл CRUD для товаров (Product CRUD):
+- **Просмотр каталога**: Таблица со всеми параметрами (Штрихкод, Название, Категория, Себестоимость, Цена продажи, Прибыль, Процент маржи, Остаток с единицами измерения `шт`, `кг`, `м`, `л` и т.д.).
+- **Поиск и фильтрация**: Мгновенный поиск по названию, штрихкоду и характеристикам, фильтр по категориям и уровню остатков (в наличии / мало / нет на складе).
+- **Сортировка**: По названию, ценам закупки и продажи, остатку, маржинальности.
+- **Создание товара**:
+  - Поддержка кастомного штрихкода или автогенерация внутреннего SKU (`INT-...`).
+  - Выбор категории или быстрое создание новой категории "на лету".
+  - Динамический расчет чистой прибыли с 1 единицы и процента наценки в реальном времени.
+  - Динамические произвольные атрибуты (Бренд, Размер, Цвет, Артикул, Мощность, Патрон и др.).
+- **Редактирование товара**: Полное обновление данных, остатков и характеристик.
+- **Детальный просмотр**: Модальное окно с карточкой товара, оценкой складских запасов в деньгах и копированием штрихкода.
+- **Быстрое управление остатками**: Кнопки `+` / `-` прямо из таблицы.
+- **Удаление товара**: С диалоговым окном подтверждения.
+
+### 🏷️ Управление категориями (Categories):
+- Просмотр списка категорий со счетчиком привязанных товаров.
+- Быстрое создание и удаление категорий.
+
+### 🔍 Сканер штрихкодов:
+- Быстрый ввод / сканирование штрихкода аппаратным сканером или вручную.
+- Мгновенное списание / оприходование остатков.
+
+### ⚡ Автономный режим (Offline / Demo Fallback):
+- Приложение автоматически проверяет доступность Spring Boot бэкенда (`http://localhost:8080/api/v1`).
+- Если бэкенд запущен — работает напрямую с PostgreSQL / Supabase через Spring Boot REST API.
+- Если бэкенд не запущен — плавно переключается в локальный режим с демонстрационными данными без ошибок.
+
+---
+
+## 🛠️ Запуск проекта
+
+### 1. Запуск Spring Boot бэкенда (в `/Desktop/usta-main`):
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd /Users/sezim.kanatova/Desktop/usta-main
+./gradlew bootRun
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Запуск Next.js фронтенда (в `/Desktop/usta-frontend`):
+```bash
+cd /Users/sezim.kanatova/Desktop/usta-frontend
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Откройте в браузере: [http://localhost:3000](http://localhost:3000)

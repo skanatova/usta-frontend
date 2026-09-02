@@ -1,0 +1,482 @@
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { Product, Category } from '@/types';
+import { 
+  Search, 
+  Filter, 
+  ArrowUpDown, 
+  Eye, 
+  Edit3, 
+  Trash2, 
+  Plus, 
+  Minus, 
+  Barcode, 
+  Tag, 
+  Copy, 
+  Check, 
+  Package, 
+  AlertTriangle,
+  CheckCircle2,
+  TrendingUp,
+  X
+} from 'lucide-react';
+
+interface ProductTableProps {
+  products: Product[];
+  categories: Category[];
+  isLoading: boolean;
+  onViewProduct: (product: Product) => void;
+  onEditProduct: (product: Product) => void;
+  onDeleteProduct: (product: Product) => void;
+  onQuickUpdateStock: (product: Product, newQty: number) => Promise<void>;
+  onOpenCreateModal: () => void;
+}
+
+type SortField = 'name' | 'price' | 'costPrice' | 'quantity' | 'marginPercent' | 'id';
+type SortOrder = 'asc' | 'desc';
+type StockFilter = 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+
+export function ProductTable({
+  products,
+  categories,
+  isLoading,
+  onViewProduct,
+  onEditProduct,
+  onDeleteProduct,
+  onQuickUpdateStock,
+  onOpenCreateModal
+}: ProductTableProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<number | 'all'>('all');
+  const [stockFilter, setStockFilter] = useState<StockFilter>('all');
+  const [sortField, setSortField] = useState<SortField>('id');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [copiedBarcode, setCopiedBarcode] = useState<string | null>(null);
+
+  const handleCopyBarcode = (barcode: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(barcode);
+    setCopiedBarcode(barcode);
+    setTimeout(() => setCopiedBarcode(null), 1500);
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      // 1. Search filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const matchesName = p.name.toLowerCase().includes(q);
+        const matchesBarcode = p.barcode.toLowerCase().includes(q);
+        const matchesCategory = p.categoryName?.toLowerCase().includes(q);
+        const matchesAttrs = Object.values(p.attributes || {}).some((v) =>
+          v.toLowerCase().includes(q)
+        );
+        if (!matchesName && !matchesBarcode && !matchesCategory && !matchesAttrs) {
+          return false;
+        }
+      }
+
+      // 2. Category filter
+      if (selectedCategory !== 'all') {
+        if (p.categoryId !== selectedCategory) return false;
+      }
+
+      // 3. Stock filter
+      if (stockFilter === 'in_stock') {
+        if ((p.quantity || 0) <= 0) return false;
+      } else if (stockFilter === 'low_stock') {
+        if ((p.quantity || 0) <= 0 || (p.quantity || 0) > 5) return false;
+      } else if (stockFilter === 'out_of_stock') {
+        if ((p.quantity || 0) > 0) return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      let valA: any = a[sortField];
+      let valB: any = b[sortField];
+
+      if (sortField === 'marginPercent') {
+        valA = a.marginPercent ?? ((a.price - a.costPrice) / (a.costPrice || 1));
+        valB = b.marginPercent ?? ((b.price - b.costPrice) / (b.costPrice || 1));
+      }
+
+      if (typeof valA === 'string') {
+        return sortOrder === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      return sortOrder === 'asc' ? (valA || 0) - (valB || 0) : (valB || 0) - (valA || 0);
+    });
+  }, [products, searchQuery, selectedCategory, stockFilter, sortField, sortOrder]);
+
+  return (
+    <div className="space-y-4">
+      
+      {/* Search & Filter Toolbar */}
+      <div className="p-4 bg-slate-900/70 border border-slate-800 rounded-2xl backdrop-blur-sm space-y-3">
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Поиск по названию, штрихкоду или характеристикам (напр. Makita, 12мм)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-9 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-3 text-slate-400 hover:text-white p-0.5"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Category dropdown */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedCategory}
+              onChange={(e) =>
+                setSelectedCategory(e.target.value === 'all' ? 'all' : Number(e.target.value))
+              }
+              className="px-3.5 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white text-xs font-medium focus:outline-none focus:border-amber-500"
+            >
+              <option value="all">Все категории ({categories.length})</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Stock Filter Pills */}
+            <select
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value as StockFilter)}
+              className="px-3.5 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white text-xs font-medium focus:outline-none focus:border-amber-500"
+            >
+              <option value="all">Любой остаток</option>
+              <option value="in_stock">В наличии (&gt;0)</option>
+              <option value="low_stock">Мало (&le; 5)</option>
+              <option value="out_of_stock">Закончился (0)</option>
+            </select>
+          </div>
+
+        </div>
+
+        {/* Category quick badges */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium ${
+              selectedCategory === 'all'
+                ? 'bg-amber-500 text-slate-950 font-bold'
+                : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
+            }`}
+          >
+            Все ({products.length})
+          </button>
+          {categories.map((cat) => {
+            const count = products.filter((p) => p.categoryId === cat.id).length;
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(isSelected ? 'all' : cat.id)}
+                className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium ${
+                  isSelected
+                    ? 'bg-orange-500 text-slate-950 font-bold'
+                    : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
+                }`}
+              >
+                {cat.name} ({count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-900/90 text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                <th
+                  onClick={() => handleSort('name')}
+                  className="py-3.5 px-4 cursor-pointer hover:text-white transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Товар / Характеристики</span>
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
+                </th>
+                <th className="py-3.5 px-3">Штрихкод / SKU</th>
+                <th className="py-3.5 px-3">Категория</th>
+                <th
+                  onClick={() => handleSort('costPrice')}
+                  className="py-3.5 px-3 cursor-pointer hover:text-white transition-colors text-right"
+                >
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Закуп</span>
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('price')}
+                  className="py-3.5 px-3 cursor-pointer hover:text-white transition-colors text-right"
+                >
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Продажа</span>
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('marginPercent')}
+                  className="py-3.5 px-3 cursor-pointer hover:text-white transition-colors text-right"
+                >
+                  <div className="flex items-center justify-end gap-1.5">
+                    <span>Маржа</span>
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('quantity')}
+                  className="py-3.5 px-3 cursor-pointer hover:text-white transition-colors text-center"
+                >
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span>Остаток</span>
+                    <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                  </div>
+                </th>
+                <th className="py-3.5 px-4 text-right">Действия</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-800/60">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                    <div className="inline-block w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2" />
+                    <p className="text-xs">Загрузка каталога товаров...</p>
+                  </td>
+                </tr>
+              ) : filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center">
+                    <Package className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                    <h4 className="text-sm font-bold text-slate-300">Товары не найдены</h4>
+                    <p className="text-xs text-slate-500 mt-1 mb-4">
+                      {searchQuery || selectedCategory !== 'all' || stockFilter !== 'all'
+                        ? 'Попробуйте изменить параметры поиска или фильтров'
+                        : 'В вашем складе еще нет добавленных позиций'}
+                    </p>
+                    <button
+                      onClick={onOpenCreateModal}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md shadow-amber-500/20"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Добавить первый товар
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map((product) => {
+                  const marginAmount = product.marginAmount ?? (product.price - product.costPrice);
+                  const marginPercent = product.marginPercent ?? (product.costPrice > 0 ? ((marginAmount / product.costPrice) * 100) : 0);
+                  const isLowStock = (product.quantity || 0) <= 5 && (product.quantity || 0) > 0;
+                  const isOutOfStock = (product.quantity || 0) <= 0;
+
+                  return (
+                    <tr
+                      key={product.id}
+                      onClick={() => onViewProduct(product)}
+                      className="hover:bg-slate-800/50 cursor-pointer transition-colors group"
+                    >
+                      {/* Name & Attributes */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-100 group-hover:text-amber-400 transition-colors">
+                          {product.name}
+                        </div>
+                        {/* Attribute tags */}
+                        {product.attributes && Object.keys(product.attributes).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {Object.entries(product.attributes).slice(0, 3).map(([k, v]) => (
+                              <span
+                                key={k}
+                                className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60"
+                              >
+                                <strong className="text-slate-300 mr-1">{k}:</strong> {v}
+                              </span>
+                            ))}
+                            {Object.keys(product.attributes).length > 3 && (
+                              <span className="text-[10px] text-slate-500 self-center">
+                                +{Object.keys(product.attributes).length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Barcode / SKU */}
+                      <td className="py-3.5 px-3">
+                        <button
+                          onClick={(e) => handleCopyBarcode(product.barcode, e)}
+                          title="Нажмите, чтобы скопировать штрихкод"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-amber-300/90 font-mono text-xs border border-slate-700/80 transition-colors"
+                        >
+                          <Barcode className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{product.barcode}</span>
+                          {copiedBarcode === product.barcode ? (
+                            <Check className="w-3 h-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          )}
+                        </button>
+                      </td>
+
+                      {/* Category */}
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        {product.categoryName ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                            {product.categoryName}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500">—</span>
+                        )}
+                      </td>
+
+                      {/* Cost Price */}
+                      <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                        <span className="text-xs text-slate-400 font-mono">
+                          {product.costPrice.toLocaleString()} сом
+                        </span>
+                      </td>
+
+                      {/* Retail Price */}
+                      <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                        <span className="text-sm font-bold text-white font-mono">
+                          {product.price.toLocaleString()} сом
+                        </span>
+                      </td>
+
+                      {/* Margin % and Amount */}
+                      <td className="py-3.5 px-3 text-right whitespace-nowrap">
+                        <div className="flex flex-col items-end">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                            Number(marginPercent) >= 30
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : Number(marginPercent) > 0
+                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                              : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                          }`}>
+                            +{Number(marginPercent).toFixed(1)}%
+                          </span>
+                          <span className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                            +{marginAmount.toLocaleString()} сом
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Stock Quantity + Quick +/- */}
+                      <td className="py-3.5 px-3 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="inline-flex items-center gap-1.5 p-1 rounded-lg bg-slate-800/60 border border-slate-700/60">
+                          <button
+                            onClick={() => onQuickUpdateStock(product, Math.max(0, product.quantity - 1))}
+                            disabled={product.quantity <= 0}
+                            className="p-1 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-700 disabled:opacity-20 transition-colors"
+                            title="Уменьшить остаток на 1"
+                          >
+                            <Minus className="w-3.5 h-3.5" />
+                          </button>
+
+                          <span className={`px-1.5 font-mono text-xs font-black ${
+                            isOutOfStock 
+                              ? 'text-rose-400' 
+                              : isLowStock 
+                              ? 'text-amber-400' 
+                              : 'text-emerald-400'
+                          }`}>
+                            {product.quantity} {product.unit}
+                          </span>
+
+                          <button
+                            onClick={() => onQuickUpdateStock(product, product.quantity + 1)}
+                            className="p-1 rounded text-slate-400 hover:text-emerald-400 hover:bg-slate-700 transition-colors"
+                            title="Увеличить остаток на 1"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Action buttons */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => onViewProduct(product)}
+                            className="p-1.5 text-slate-400 hover:text-amber-400 rounded-lg hover:bg-slate-800 transition-colors"
+                            title="Просмотреть"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => onEditProduct(product)}
+                            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                            title="Редактировать"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteProduct(product)}
+                            className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
+                            title="Удалить"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer info */}
+        <div className="px-4 py-3 border-t border-slate-800 bg-slate-900/90 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
+          <div>
+            Показано: <strong className="text-white">{filteredProducts.length}</strong> из <strong className="text-white">{products.length}</strong> товаров
+          </div>
+          <div className="flex items-center gap-4 text-[11px]">
+            <span className="flex items-center gap-1 text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" /> В наличии (&gt;5)
+            </span>
+            <span className="flex items-center gap-1 text-amber-400">
+              <span className="w-2 h-2 rounded-full bg-amber-400" /> Мало (&le;5)
+            </span>
+            <span className="flex items-center gap-1 text-rose-400">
+              <span className="w-2 h-2 rounded-full bg-rose-400" /> Нет (0)
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
