@@ -8,13 +8,12 @@ import {
   Barcode, 
   Plus, 
   Trash2, 
-  HelpCircle, 
   Layers, 
   Save, 
-  Tag,
-  DollarSign,
-  TrendingUp,
-  Boxes
+  Tag, 
+  DollarSign, 
+  TrendingUp, 
+  Boxes 
 } from 'lucide-react';
 
 interface ProductModalProps {
@@ -34,8 +33,7 @@ const SUGGESTED_ATTRIBUTES = [
   'Цвет',
   'Материал',
   'Мощность',
-  'Артикул',
-  'Страна'
+  'Артикул'
 ];
 
 export function ProductModal({
@@ -174,43 +172,43 @@ export function ProductModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col">
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-900/95 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-              <Tag className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
+              <Tag className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">
-                {initialData ? 'Редактировать товар' : 'Новый товар на склад'}
+              <h2 className="text-base sm:text-lg font-bold text-white leading-tight">
+                {initialData ? 'Редактировать товар' : 'Новый товар'}
               </h2>
-              <p className="text-xs text-slate-400">
-                {initialData ? `ID: #${initialData.id} • SKU: ${initialData.barcode}` : 'Заполните параметры товара и характеристики'}
+              <p className="text-[10px] sm:text-xs text-slate-400">
+                {initialData ? `ID: #${initialData.id}` : 'Заполните параметры и цены'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body / Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-800/60 text-rose-300 text-sm">
+            <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-800/60 text-rose-300 text-xs sm:text-sm">
               {error}
             </div>
           )}
 
           {/* 1. Name */}
           <div>
-            <label className="block text-xs font-semibold uppercase text-slate-300 mb-1.5">
+            <label className="block text-[11px] sm:text-xs font-semibold uppercase text-slate-300 mb-1">
               Название товара <span className="text-rose-400">*</span>
             </label>
             <input
@@ -219,77 +217,74 @@ export function ProductModal({
               placeholder="Например: Перфоратор Makita HR2470"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+              className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
             />
           </div>
 
           {/* 2. Barcode & SKU */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold uppercase text-slate-300 flex items-center gap-1.5">
-                <Barcode className="w-4 h-4 text-slate-400" />
-                Штрихкод / Артикул
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] sm:text-xs font-semibold uppercase text-slate-300 flex items-center gap-1.5">
+                <Barcode className="w-3.5 h-3.5 text-slate-400" />
+                Штрихкод / SKU
               </label>
               <button
                 type="button"
                 onClick={handleGenerateBarcode}
-                className="inline-flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
+                className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                Сгенерировать SKU
+                <Sparkles className="w-3 h-3" />
+                Сгенерировать
               </button>
             </div>
             <input
               type="text"
-              placeholder="Штрихкод со сканера или оставьте пустым для автогенерации"
+              placeholder="Оставьте пустым для автогенерации"
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 text-sm font-mono focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+              className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white placeholder-slate-500 text-xs sm:text-sm font-mono focus:outline-none focus:border-amber-500 transition-colors"
             />
-            <p className="text-[11px] text-slate-500 mt-1">
-              Если штрихкод не указан, система автоматически создаст внутренний SKU (напр. INT-123456789)
-            </p>
           </div>
 
           {/* 3. Category */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold uppercase text-slate-300 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-slate-400" />
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[11px] sm:text-xs font-semibold uppercase text-slate-300 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-slate-400" />
                 Категория
               </label>
               <button
                 type="button"
                 onClick={() => setShowAddCat(!showAddCat)}
-                className="text-xs text-orange-400 hover:text-orange-300 font-medium transition-colors"
+                className="text-[11px] sm:text-xs text-orange-400 hover:text-orange-300 font-medium transition-colors"
               >
-                {showAddCat ? 'Отмена' : '+ Создать категорию'}
+                {showAddCat ? 'Отмена' : '+ Создать'}
               </button>
             </div>
 
-            {showAddCat ? (
-              <div className="flex gap-2 p-2 bg-slate-800/40 rounded-xl border border-slate-700/60 mb-2 animate-in fade-in">
+            {showAddCat && (
+              <div className="flex gap-2 p-2 bg-slate-800/40 rounded-xl border border-slate-700/60 mb-2">
                 <input
                   type="text"
-                  placeholder="Новая категория (напр. Сантехника)"
+                  placeholder="Новая категория"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
-                  className="flex-1 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500"
+                  className="flex-1 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs sm:text-sm text-white focus:outline-none focus:border-orange-500"
                 />
                 <button
                   type="button"
                   onClick={handleCreateCategory}
-                  className="px-3 py-1.5 bg-orange-500 hover:bg-orange-400 text-slate-950 font-bold rounded-lg text-xs"
+                  className="px-3 py-1.5 bg-orange-500 text-slate-950 font-bold rounded-lg text-xs"
                 >
                   Добавить
                 </button>
               </div>
-            ) : null}
+            )}
 
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+              className="w-full px-3.5 py-2 sm:py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-amber-500 transition-colors"
             >
               <option value="">-- Без категории --</option>
               {categories.map((c) => (
@@ -300,35 +295,35 @@ export function ProductModal({
             </select>
           </div>
 
-          {/* 4. Pricing & Real-time Margin Calculation */}
-          <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-              Ценообразование и маржинальность
+          {/* 4. Pricing & Margin */}
+          <div className="p-3 sm:p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 space-y-3">
+            <div className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              Ценообразование и маржа
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  Закупочная цена (Себестоимость)
+                <label className="block text-[10px] sm:text-xs text-slate-400 mb-1 truncate">
+                  Закуп (Себестоимость)
                 </label>
                 <div className="relative">
                   <input
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="0.00"
+                    placeholder="0"
                     value={costPrice}
                     onChange={(e) => setCostPrice(e.target.value ? parseFloat(e.target.value) : '')}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-emerald-500"
                   />
-                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">сом</span>
+                  <span className="absolute right-2.5 top-2 text-[10px] sm:text-xs text-slate-400">с</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  Цена продажи (Розница) <span className="text-rose-400">*</span>
+                <label className="block text-[10px] sm:text-xs text-slate-400 mb-1 truncate">
+                  Продажа (Розница) *
                 </label>
                 <div className="relative">
                   <input
@@ -336,46 +331,45 @@ export function ProductModal({
                     min="0"
                     step="0.01"
                     required
-                    placeholder="0.00"
+                    placeholder="0"
                     value={price}
                     onChange={(e) => setPrice(e.target.value ? parseFloat(e.target.value) : '')}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm font-semibold focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs sm:text-sm font-semibold focus:outline-none focus:border-amber-500"
                   />
-                  <span className="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">сом</span>
+                  <span className="absolute right-2.5 top-2 text-[10px] sm:text-xs text-slate-400">с</span>
                 </div>
               </div>
             </div>
 
             {/* Margin Calculation Preview */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-slate-900/90 border border-slate-800 text-xs">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-amber-400" />
-                <span className="text-slate-400">Прибыль с 1 единицы:</span>
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] sm:text-xs">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="text-slate-400">Прибыль:</span>
                 <span className={`font-bold ${marginAmount >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {marginAmount >= 0 ? '+' : ''}{marginAmount.toFixed(2)} сом
+                  {marginAmount >= 0 ? '+' : ''}{marginAmount.toFixed(0)} сом
                 </span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-400">Наценка:</span>
-                <span className={`px-2 py-0.5 rounded-full font-bold text-xs ${
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-slate-400">Маржа:</span>
+                <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] sm:text-xs ${
                   Number(marginPercent) >= 30
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    ? 'bg-emerald-500/20 text-emerald-300'
                     : Number(marginPercent) > 0
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : 'bg-rose-500/20 text-rose-300'
                 }`}>
-                  {marginPercent}%
+                  +{marginPercent}%
                 </span>
               </div>
             </div>
           </div>
 
           {/* 5. Quantity & Unit */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             <div>
-              <label className="block text-xs font-semibold uppercase text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <Boxes className="w-4 h-4 text-slate-400" />
-                Количество на складе
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase text-slate-300 mb-1 flex items-center gap-1 truncate">
+                <Boxes className="w-3.5 h-3.5 text-slate-400" />
+                Остаток
               </label>
               <input
                 type="number"
@@ -384,112 +378,104 @@ export function ProductModal({
                 placeholder="0"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value ? parseFloat(e.target.value) : '')}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase text-slate-300 mb-1.5">
-                Единица измерения
+              <label className="block text-[11px] sm:text-xs font-semibold uppercase text-slate-300 mb-1">
+                Ед. измерения
               </label>
-              <div className="flex gap-1.5">
-                <select
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500"
-                >
-                  {COMMON_UNITS.map((u) => (
-                    <option key={u} value={u}>
-                      {u}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-amber-500"
+              >
+                {COMMON_UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          {/* 6. Dynamic Custom Attributes (Map<String, String>) */}
-          <div className="space-y-3 pt-2">
+          {/* 6. Dynamic Attributes */}
+          <div className="space-y-2.5 pt-1">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-xs font-semibold uppercase text-slate-300">
-                  Дополнительные характеристики (Атрибуты)
+                <label className="text-[11px] sm:text-xs font-semibold uppercase text-slate-300 block">
+                  Характеристики
                 </label>
-                <p className="text-[11px] text-slate-400">Бренд, цвет, размер, артикул, материал и т.д.</p>
               </div>
               <button
                 type="button"
                 onClick={() => handleAddAttribute()}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-medium border border-slate-700 transition-colors"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3 h-3" />
                 Добавить
               </button>
             </div>
 
-            {/* Quick suggested chips */}
-            <div className="flex flex-wrap gap-1.5">
-              <span className="text-[11px] text-slate-500 self-center">Быстро добавить:</span>
+            {/* Quick chips */}
+            <div className="flex flex-wrap gap-1">
               {SUGGESTED_ATTRIBUTES.map((sug) => (
                 <button
                   key={sug}
                   type="button"
                   onClick={() => handleAddAttribute(sug)}
-                  className="px-2 py-0.5 rounded-md bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-[11px] text-slate-300 transition-colors"
+                  className="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700 text-[10px] text-slate-300 active:bg-slate-700"
                 >
                   +{sug}
                 </button>
               ))}
             </div>
 
-            {/* Attributes Inputs */}
-            {attributes.length > 0 && (
-              <div className="space-y-2">
-                {attributes.map((attr, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      placeholder="Параметр (напр. Бренд)"
-                      value={attr.key}
-                      onChange={(e) => handleAttributeChange(idx, 'key', e.target.value)}
-                      className="w-1/3 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Значение (напр. Makita)"
-                      value={attr.value}
-                      onChange={(e) => handleAttributeChange(idx, 'value', e.target.value)}
-                      className="flex-1 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAttribute(idx)}
-                      className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+            {/* Attribute Rows */}
+            {attributes.map((attr, idx) => (
+              <div key={idx} className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  placeholder="Параметр"
+                  value={attr.key}
+                  onChange={(e) => handleAttributeChange(idx, 'key', e.target.value)}
+                  className="w-1/3 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Значение"
+                  value={attr.value}
+                  onChange={(e) => handleAttributeChange(idx, 'value', e.target.value)}
+                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAttribute(idx)}
+                  className="p-1.5 text-slate-400 hover:text-rose-400"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
-            )}
+            ))}
           </div>
 
-          {/* Modal Footer */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          {/* Sticky Modal Footer */}
+          <div className="sticky bottom-0 pt-3 pb-1 bg-slate-900 border-t border-slate-800/80 flex items-center justify-end gap-2.5 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors"
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium transition-colors"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50 transition-all"
+              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/20 disabled:opacity-50 transition-all"
             >
               <Save className="w-4 h-4" />
-              {isSubmitting ? 'Сохранение...' : initialData ? 'Обновить товар' : 'Сохранить товар'}
+              {isSubmitting ? 'Сохранение...' : initialData ? 'Обновить' : 'Сохранить'}
             </button>
           </div>
 

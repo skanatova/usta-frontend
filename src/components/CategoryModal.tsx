@@ -6,9 +6,7 @@ import {
   X, 
   Layers, 
   Plus, 
-  Trash2, 
-  FolderPlus,
-  Boxes
+  Trash2
 } from 'lucide-react';
 
 interface CategoryModalProps {
@@ -54,18 +52,18 @@ export function CategoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/90">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-900/95 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20">
-              <Layers className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20">
+              <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Категории товаров</h3>
-              <p className="text-xs text-slate-400">Управление справочником категорий</p>
+              <h3 className="text-base sm:text-lg font-bold text-white leading-tight">Категории товаров</h3>
+              <p className="text-[10px] sm:text-xs text-slate-400">Справочник разделов каталога</p>
             </div>
           </div>
           <button
@@ -77,21 +75,21 @@ export function CategoryModal({
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1">
           
           {/* Add Category Input */}
           <form onSubmit={handleAdd} className="flex gap-2">
             <input
               type="text"
-              placeholder="Название новой категории..."
+              placeholder="Название категории..."
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
-              className="flex-1 px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-orange-500"
+              className="flex-1 px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:border-orange-500"
             />
             <button
               type="submit"
               disabled={isSubmitting || !newCatName.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-slate-950 font-bold rounded-xl text-xs disabled:opacity-50 transition-colors shadow-md shadow-orange-500/20"
+              className="inline-flex items-center gap-1 px-3.5 py-2 bg-orange-500 hover:bg-orange-400 text-slate-950 font-bold rounded-xl text-xs disabled:opacity-50 transition-colors shadow-md shadow-orange-500/20 shrink-0"
             >
               <Plus className="w-4 h-4" />
               Добавить
@@ -103,7 +101,7 @@ export function CategoryModal({
           )}
 
           {/* Category List */}
-          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
             {categories.length === 0 ? (
               <div className="text-center py-6 text-xs text-slate-500">
                 Категорий пока нет. Создайте первую выше!
@@ -114,14 +112,14 @@ export function CategoryModal({
                 return (
                   <div
                     key={cat.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 border border-slate-800 hover:border-slate-700 transition-colors"
+                    className="flex items-center justify-between p-2.5 sm:p-3 rounded-xl bg-slate-800/50 border border-slate-800 hover:border-slate-700 transition-colors"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-2 h-2 rounded-full bg-orange-400" />
-                      <span className="text-sm font-medium text-slate-200">{cat.name}</span>
+                    <div className="flex items-center gap-2 min-w-0 pr-2">
+                      <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+                      <span className="text-xs sm:text-sm font-medium text-slate-200 truncate">{cat.name}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] sm:text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
                         {count} тов.
                       </span>
                       <button
@@ -140,11 +138,11 @@ export function CategoryModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/90 flex justify-end">
+        <div className="p-3.5 sm:p-4 border-t border-slate-800 bg-slate-900/95 flex justify-end shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs sm:text-sm font-medium transition-colors"
           >
             Готово
           </button>

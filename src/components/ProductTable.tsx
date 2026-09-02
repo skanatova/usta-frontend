@@ -19,7 +19,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   TrendingUp,
-  X
+  X,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
 interface ProductTableProps {
@@ -53,6 +55,7 @@ export function ProductTable({
   const [sortField, setSortField] = useState<SortField>('id');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [copiedBarcode, setCopiedBarcode] = useState<string | null>(null);
+  const [mobileView, setMobileView] = useState<'cards' | 'table'>('cards');
 
   const handleCopyBarcode = (barcode: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -123,15 +126,15 @@ export function ProductTable({
     <div className="space-y-4">
       
       {/* Search & Filter Toolbar */}
-      <div className="p-4 bg-slate-900/70 border border-slate-800 rounded-2xl backdrop-blur-sm space-y-3">
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <div className="p-3 sm:p-4 bg-slate-900/70 border border-slate-800 rounded-xl sm:rounded-2xl backdrop-blur-sm space-y-2.5 sm:space-y-3">
+        <div className="flex flex-col md:flex-row gap-2.5 sm:gap-3 items-stretch md:items-center justify-between">
           
           {/* Search Input */}
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Поиск по названию, штрихкоду или характеристикам (напр. Makita, 12мм)..."
+              placeholder="Поиск по названию, штрихкоду, бренду..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-9 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
@@ -146,14 +149,14 @@ export function ProductTable({
             )}
           </div>
 
-          {/* Category dropdown */}
-          <div className="flex items-center gap-2">
+          {/* Filters & Sorting on Mobile/Desktop */}
+          <div className="grid grid-cols-2 sm:flex items-center gap-2">
             <select
               value={selectedCategory}
               onChange={(e) =>
                 setSelectedCategory(e.target.value === 'all' ? 'all' : Number(e.target.value))
               }
-              className="px-3.5 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white text-xs font-medium focus:outline-none focus:border-amber-500"
+              className="w-full sm:w-auto px-3 py-2 sm:py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white text-xs font-medium focus:outline-none focus:border-amber-500 truncate"
             >
               <option value="all">Все категории ({categories.length})</option>
               {categories.map((c) => (
@@ -163,26 +166,26 @@ export function ProductTable({
               ))}
             </select>
 
-            {/* Stock Filter Pills */}
+            {/* Stock Filter */}
             <select
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value as StockFilter)}
-              className="px-3.5 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white text-xs font-medium focus:outline-none focus:border-amber-500"
+              className="w-full sm:w-auto px-3 py-2 sm:py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white text-xs font-medium focus:outline-none focus:border-amber-500"
             >
-              <option value="all">Любой остаток</option>
+              <option value="all">Все остатки</option>
               <option value="in_stock">В наличии (&gt;0)</option>
-              <option value="low_stock">Мало (&le; 5)</option>
+              <option value="low_stock">Мало (&le;5)</option>
               <option value="out_of_stock">Закончился (0)</option>
             </select>
           </div>
 
         </div>
 
-        {/* Category quick badges */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+        {/* Category quick badges (Horizontal Scrollable) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none no-scrollbar">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium ${
+            className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium text-xs shrink-0 ${
               selectedCategory === 'all'
                 ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
@@ -197,7 +200,7 @@ export function ProductTable({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(isSelected ? 'all' : cat.id)}
-                className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium ${
+                className={`px-3 py-1 rounded-lg transition-colors whitespace-nowrap font-medium text-xs shrink-0 ${
                   isSelected
                     ? 'bg-orange-500 text-slate-950 font-bold'
                     : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
@@ -210,8 +213,173 @@ export function ProductTable({
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl">
+      {/* MOBILE CARDS VIEW (block md:hidden) */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          <div className="p-8 text-center text-slate-400 bg-slate-900/60 rounded-xl border border-slate-800">
+            <div className="inline-block w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-2" />
+            <p className="text-xs">Загрузка каталога...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="p-8 text-center bg-slate-900/60 rounded-xl border border-slate-800">
+            <Package className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+            <h4 className="text-sm font-bold text-slate-300">Товары не найдены</h4>
+            <p className="text-xs text-slate-500 mt-1 mb-4">
+              Попробуйте изменить поиск или добавьте новый товар
+            </p>
+            <button
+              onClick={onOpenCreateModal}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl"
+            >
+              <Plus className="w-4 h-4" />
+              Добавить товар
+            </button>
+          </div>
+        ) : (
+          filteredProducts.map((product) => {
+            const marginAmount = product.marginAmount ?? (product.price - product.costPrice);
+            const marginPercent = product.marginPercent ?? (product.costPrice > 0 ? ((marginAmount / product.costPrice) * 100) : 0);
+            const isLowStock = (product.quantity || 0) <= 5 && (product.quantity || 0) > 0;
+            const isOutOfStock = (product.quantity || 0) <= 0;
+
+            return (
+              <div
+                key={product.id}
+                onClick={() => onViewProduct(product)}
+                className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 space-y-3 shadow-lg active:border-slate-700 transition-all"
+              >
+                {/* Header row: Category + Margin */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 truncate">
+                    {product.categoryName ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/20 truncate">
+                        {product.categoryName}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-500">Без категории</span>
+                    )}
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${
+                    Number(marginPercent) >= 30
+                      ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                      : Number(marginPercent) > 0
+                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                      : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                  }`}>
+                    +{Number(marginPercent).toFixed(1)}% маржа
+                  </span>
+                </div>
+
+                {/* Title */}
+                <div>
+                  <h3 className="font-bold text-sm text-slate-100 leading-snug">
+                    {product.name}
+                  </h3>
+                  {/* Barcode chip */}
+                  <div className="flex items-center gap-2 mt-1">
+                    <button
+                      onClick={(e) => handleCopyBarcode(product.barcode, e)}
+                      className="inline-flex items-center gap-1 text-[11px] font-mono text-amber-300/90 bg-slate-800 px-2 py-0.5 rounded border border-slate-700/80 active:bg-slate-700"
+                    >
+                      <Barcode className="w-3 h-3 text-amber-400" />
+                      <span>{product.barcode}</span>
+                      {copiedBarcode === product.barcode && <Check className="w-3 h-3 text-emerald-400 ml-0.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Attribute chips */}
+                {product.attributes && Object.keys(product.attributes).length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {Object.entries(product.attributes).slice(0, 3).map(([k, v]) => (
+                      <span
+                        key={k}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/60"
+                      >
+                        <strong className="text-slate-300">{k}:</strong> {v}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pricing & Profit Grid */}
+                <div className="grid grid-cols-3 gap-2 p-2.5 rounded-lg bg-slate-800/40 border border-slate-800 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500 block">Закуп</span>
+                    <span className="font-semibold text-slate-300">{product.costPrice.toLocaleString()} с</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 block">Продажа</span>
+                    <span className="font-black text-amber-400">{product.price.toLocaleString()} с</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-500 block">Прибыль</span>
+                    <span className="font-bold text-emerald-400">+{marginAmount.toLocaleString()} с</span>
+                  </div>
+                </div>
+
+                {/* Bottom Controls: Stock Stepper & Actions */}
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 gap-2" onClick={(e) => e.stopPropagation()}>
+                  
+                  {/* Touch-optimized Stock Stepper */}
+                  <div className="flex items-center gap-1 p-1 bg-slate-800 rounded-lg border border-slate-700">
+                    <button
+                      onClick={() => onQuickUpdateStock(product, Math.max(0, product.quantity - 1))}
+                      disabled={product.quantity <= 0}
+                      className="w-8 h-8 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 flex items-center justify-center active:scale-95 disabled:opacity-30 transition-all"
+                      title="Уменьшить остаток"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className={`px-2 font-mono text-xs font-black min-w-[50px] text-center ${
+                      isOutOfStock ? 'text-rose-400' : isLowStock ? 'text-amber-400' : 'text-emerald-400'
+                    }`}>
+                      {product.quantity} {product.unit}
+                    </span>
+                    <button
+                      onClick={() => onQuickUpdateStock(product, product.quantity + 1)}
+                      className="w-8 h-8 rounded bg-slate-700 hover:bg-slate-600 text-slate-200 flex items-center justify-center active:scale-95 transition-all"
+                      title="Увеличить остаток"
+                    >
+                      <Plus className="w-4 h-4 text-emerald-400" />
+                    </button>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onViewProduct(product)}
+                      className="p-2 text-slate-300 hover:text-amber-400 bg-slate-800 rounded-lg border border-slate-700 active:scale-95 transition-all"
+                      title="Подробнее"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onEditProduct(product)}
+                      className="p-2 text-slate-300 hover:text-white bg-slate-800 rounded-lg border border-slate-700 active:scale-95 transition-all"
+                      title="Редактировать"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDeleteProduct(product)}
+                      className="p-2 text-rose-400 hover:text-rose-300 bg-slate-800 rounded-lg border border-slate-700 active:scale-95 transition-all"
+                      title="Удалить"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                </div>
+
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW (hidden md:block) */}
+      <div className="hidden md:block bg-slate-900/70 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-sm shadow-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
@@ -458,7 +626,7 @@ export function ProductTable({
           </table>
         </div>
 
-        {/* Footer info */}
+        {/* Desktop Footer info */}
         <div className="px-4 py-3 border-t border-slate-800 bg-slate-900/90 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
           <div>
             Показано: <strong className="text-white">{filteredProducts.length}</strong> из <strong className="text-white">{products.length}</strong> товаров

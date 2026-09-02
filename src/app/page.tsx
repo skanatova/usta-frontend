@@ -12,13 +12,20 @@ import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { CategoryModal } from '@/components/CategoryModal';
 import { BarcodeScannerModal } from '@/components/BarcodeScannerModal';
 import { ToastContainer } from '@/components/Toast';
+import { 
+  Package, 
+  Layers, 
+  Plus, 
+  ScanLine, 
+  RefreshCw 
+} from 'lucide-react';
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isBackend, setIsBackend] = useState<boolean>(false);
-  const [backendUrl, setBackendUrl] = useState<string>('http://localhost:8080/api/v1');
+  const [backendUrl, setBackendUrl] = useState<string>('https://usta-backend-hpqg.onrender.com/api/v1');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Modals state
@@ -78,15 +85,15 @@ export default function Home() {
   const handleSaveProduct = async (data: ProductInput) => {
     try {
       if (editingProduct) {
-        const { product, isBackend: backendActive } = await api.updateProduct(editingProduct.id, data);
+        const { product } = await api.updateProduct(editingProduct.id, data);
         setProducts((prev) =>
           prev.map((p) => (p.id === editingProduct.id ? product : p))
         );
-        addToast('success', `Товар "${product.name}" успешно обновлен`);
+        addToast('success', `Товар "${product.name}" обновлен`);
       } else {
-        const { product, isBackend: backendActive } = await api.createProduct(data);
+        const { product } = await api.createProduct(data);
         setProducts((prev) => [product, ...prev]);
-        addToast('success', `Товар "${product.name}" успешно добавлен на склад`);
+        addToast('success', `Товар "${product.name}" добавлен`);
       }
       setIsProductModalOpen(false);
       setEditingProduct(null);
@@ -100,7 +107,7 @@ export default function Home() {
     try {
       await api.deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
-      addToast('success', 'Товар удален из каталога');
+      addToast('success', 'Товар удален');
     } catch (err: any) {
       addToast('error', err.message || 'Ошибка при удалении товара');
       throw err;
@@ -124,7 +131,7 @@ export default function Home() {
       );
       addToast('info', `Остаток "${product.name}": ${newQty} ${product.unit}`);
     } catch (err: any) {
-      addToast('error', 'Не удалось обновить остаток: ' + err.message);
+      addToast('error', 'Ошибка остатка: ' + err.message);
     }
   };
 
@@ -174,12 +181,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-amber-500 selection:text-slate-950 pb-20 sm:pb-8">
       
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
 
-      {/* Navigation */}
+      {/* Navigation Top Bar */}
       <Navbar
         isBackend={isBackend}
         backendUrl={backendUrl}
@@ -191,12 +198,12 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-4 sm:space-y-8">
         
         {/* Top Summary / KPIs */}
         <ProductStats products={products} />
 
-        {/* Product Table and CRUD Toolbar */}
+        {/* Product Table and Mobile Cards */}
         <ProductTable
           products={products}
           categories={categories}
@@ -209,6 +216,58 @@ export default function Home() {
         />
 
       </main>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR (Fixed at bottom for easy thumb reach) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 block sm:hidden bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-3 py-2">
+        <div className="flex items-center justify-around">
+          
+          {/* Products */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 text-[10px] font-medium transition-colors"
+          >
+            <Package className="w-5 h-5" />
+            <span>Склад</span>
+          </button>
+
+          {/* Scanner */}
+          <button
+            onClick={() => setIsScannerModalOpen(true)}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 text-[10px] font-medium transition-colors"
+          >
+            <ScanLine className="w-5 h-5" />
+            <span>Сканер</span>
+          </button>
+
+          {/* Main Action FAB (Add Product) */}
+          <button
+            onClick={handleOpenCreateModal}
+            className="flex flex-col items-center justify-center -mt-5 w-12 h-12 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-black shadow-lg shadow-amber-500/30 active:scale-95 transition-all"
+            title="Добавить товар"
+          >
+            <Plus className="w-6 h-6 stroke-[2.5]" />
+          </button>
+
+          {/* Categories */}
+          <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-orange-400 text-[10px] font-medium transition-colors"
+          >
+            <Layers className="w-5 h-5" />
+            <span>Категории</span>
+          </button>
+
+          {/* Sync / Refresh */}
+          <button
+            onClick={loadData}
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400 text-[10px] font-medium transition-colors"
+          >
+            <RefreshCw className="w-5 h-5" />
+            <span>Обновить</span>
+          </button>
+
+        </div>
+      </nav>
 
       {/* Create / Edit Modal */}
       <ProductModal
